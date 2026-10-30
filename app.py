@@ -499,11 +499,13 @@ with tab_sweep:
 
         st.subheader("比較設定（比較シートに出力）")
         st.caption("比較対象グループ:")
-        sw_compare_groups = [g for g in all_groups
-                             if st.checkbox(g, key=f"sw_cg_{g}")]
+        gcols = st.columns(max(len(all_groups), 1))
+        sw_compare_groups = [g for i, g in enumerate(all_groups)
+                             if gcols[i % len(gcols)].checkbox(g, key=f"sw_cg_{g}")]
         st.caption("比較レベル:")
-        sw_compare_levels = [lv for lv in all_levels
-                             if st.checkbox(lv, key=f"sw_cl_{lv}")]
+        lcols = st.columns(max(len(all_levels), 1))
+        sw_compare_levels = [lv for i, lv in enumerate(all_levels)
+                             if lcols[i % len(lcols)].checkbox(lv, key=f"sw_cl_{lv}")]
     else:
         sw_compare_groups = []
         sw_compare_levels = []
