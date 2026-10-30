@@ -493,6 +493,21 @@ with tab_sweep:
             key="sw_file_table"
         )
 
+        # 比較設定（2グループ以上のとき有効）
+        all_groups = list(dict.fromkeys(sw_edited["グループ（シート名）"].tolist()))
+        all_levels = list(dict.fromkeys(sw_edited["レベル"].tolist()))
+
+        st.subheader("比較設定（比較シートに出力）")
+        st.caption("比較対象グループ:")
+        sw_compare_groups = [g for g in all_groups
+                             if st.checkbox(g, key=f"sw_cg_{g}")]
+        st.caption("比較レベル:")
+        sw_compare_levels = [lv for lv in all_levels
+                             if st.checkbox(lv, key=f"sw_cl_{lv}")]
+    else:
+        sw_compare_groups = []
+        sw_compare_levels = []
+
     st.markdown("---")
     st.header("② 測定条件")
 
@@ -550,6 +565,23 @@ with tab_sweep:
                         st.error("有効なCSVデータがありません"); st.stop()
 
                     groups = [{"name": k, "entries": v} for k, v in groups_dict.items()]
+
+                    # 比較シート用データ構築
+                    compare_sheets = []
+                    for lv in sw_compare_levels:
+                        entries = []
+                        for grp in groups:
+                            if grp["name"] in sw_compare_groups:
+                                for e in grp["entries"]:
+                                    if e["level"] == lv:
+                                        entries.append({
+                                            "level": grp["name"],
+                                            "freq_spl": e["freq_spl"]
+                                        })
+                        if entries:
+                            sheet_name = f"比較_{lv}" if lv else "比較"
+                            compare_sheets.append({"name": sheet_name, "entries": entries})
+
                     settings = {
                         "place": sw_place, "car": sw_car,
                         "signal": "Sin Sweep",
@@ -557,7 +589,7 @@ with tab_sweep:
                         "date": datetime.date.today().isoformat(),
                     }
 
-                    xlsx_bytes = build_sweep_excel_bytes(groups, settings)
+                    xlsx_bytes = build_sweep_excel_bytes(groups + compare_sheets, settings)
                     st.success("✅ 完了！")
                     st.download_button(
                         "📥 Excelファイルをダウンロード",
