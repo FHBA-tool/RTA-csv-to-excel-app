@@ -133,6 +133,8 @@ def _add_sweep_chart(wb, ws, group_name, entries):
     if cd_name in wb.sheetnames: del wb[cd_name]
     cd = wb.create_sheet(cd_name); cd.sheet_state = "hidden"
 
+    # 1列目: 周波数, 2列目: レベル名ヘッダー + SPL
+    cd.cell(1, 2, entries[0]["level"])
     si = sorted(entries[0]["freq_spl"].items())
     for i, (f, s) in enumerate(si):
         cd.cell(i + 2, 1, f); cd.cell(i + 2, 2, s)
@@ -170,12 +172,14 @@ def _add_sweep_chart(wb, ws, group_name, entries):
     for k, entry in enumerate(entries[1:], 1):
         si_k = sorted(entry["freq_spl"].items())
         cx, cy = 5 + (k-1)*2, 6 + (k-1)*2
+        cd.cell(1, cy, entry["level"])
         for i, (f, s) in enumerate(si_k):
             cd.cell(i+2, cx, f); cd.cell(i+2, cy, s)
         nk = len(si_k)
         sk = Series(
-            Reference(cd, min_col=cy, min_row=2, max_row=nk+1),
-            Reference(cd, min_col=cx, min_row=2, max_row=nk+1)
+            Reference(cd, min_col=cy, min_row=1, max_row=nk+1),
+            Reference(cd, min_col=cx, min_row=2, max_row=nk+1),
+            title_from_data=True
         )
         sk.graphicalProperties.line.solidFill = _PALETTE[k % len(_PALETTE)]
         sk.graphicalProperties.line.width     = 15240
@@ -257,7 +261,10 @@ def _patch_xml(x):
         new_ser = new_ser.replace('<xVal>', dlbls + '<xVal>', 1)
         x = x[:start] + new_ser + x[end:]
 
-    x = re.sub(r'<legend>.*?</legend>', '', x, flags=re.DOTALL)
+    # 系列が1つのみのとき凡例を削除、複数のときは保持
+    n_ser = len(re.findall(r'<ser>', x))
+    if n_ser <= 2:  # データ1系列 + ダミー1系列
+        x = re.sub(r'<legend>.*?</legend>', '', x, flags=re.DOTALL)
 
     x = x.replace('<plotArea>', '<plotArea>'
                   '<layout><manualLayout><layoutTarget val="inner"/>'
@@ -468,8 +475,9 @@ with tab_sweep:
         type=["csv"], accept_multiple_files=True, key="sw_csv"
     )
 
+    sw_edited = None
     if sw_csv_files:
-        st.write("**検出されたファイル:**")
+        st.write("**検出されたファイル（グループ・レベルは編集可）:**")
         rows = []
         for f in sw_csv_files:
             name = os.path.splitext(f.name)[0]
@@ -477,7 +485,13 @@ with tab_sweep:
             group = parts[0] if len(parts) == 2 else name
             level = parts[1] if len(parts) == 2 else ""
             rows.append({"ファイル名": f.name, "グループ（シート名）": group, "レベル": level})
-        st.table(rows)
+        sw_edited = st.data_editor(
+            pd.DataFrame(rows),
+            use_container_width=True,
+            disabled=["ファイル名"],
+            hide_index=True,
+            key="sw_file_table"
+        )
 
     st.markdown("---")
     st.header("② 測定条件")
@@ -514,17 +528,19 @@ with tab_sweep:
         else:
             with st.spinner("⏳ チャート生成中...（対数スケールグラフを構築しています）"):
                 try:
+                    file_map = {f.name: f for f in sw_csv_files}
                     groups_dict = {}
                     bad = []
-                    for f in sw_csv_files:
+                    for _, row in sw_edited.iterrows():
+                        fname  = row["ファイル名"]
+                        group  = str(row["グループ（シート名）"]).strip() or fname
+                        level  = str(row["レベル"]).strip() or "1W"
+                        f = file_map.get(fname)
+                        if not f: continue
                         f.seek(0)
                         freq_spl = parse_sine_csv_bytes(f.read())
                         if not freq_spl:
-                            bad.append(f.name); continue
-                        name = os.path.splitext(f.name)[0]
-                        parts = name.rsplit("_", 1)
-                        group = parts[0] if len(parts) == 2 else name
-                        level = parts[1] if len(parts) == 2 else "1W"
+                            bad.append(fname); continue
                         groups_dict.setdefault(group, []).append(
                             {"level": level, "freq_spl": freq_spl})
 
