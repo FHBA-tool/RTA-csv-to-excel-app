@@ -460,7 +460,27 @@ with tab_pink:
 # ═══════════════════════════════════════════════════════════════════════════
 
 with tab_sweep:
-    st.header("① 測定条件")
+    st.header("① CSVファイル設定")
+    st.caption("ファイル名の末尾を `グループ名_レベル名.csv` の形式にすると自動認識します（例: ASA-10_1W.csv）")
+
+    sw_csv_files = st.file_uploader(
+        "スイープ測定CSVをアップロード（複数可）",
+        type=["csv"], accept_multiple_files=True, key="sw_csv"
+    )
+
+    if sw_csv_files:
+        st.write("**検出されたファイル:**")
+        rows = []
+        for f in sw_csv_files:
+            name = os.path.splitext(f.name)[0]
+            parts = name.rsplit("_", 1)
+            group = parts[0] if len(parts) == 2 else name
+            level = parts[1] if len(parts) == 2 else ""
+            rows.append({"ファイル名": f.name, "グループ（シート名）": group, "レベル": level})
+        st.table(rows)
+
+    st.markdown("---")
+    st.header("② 測定条件")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -480,28 +500,11 @@ with tab_sweep:
         sw_mic = st.selectbox("Mic", ["Binaural", "1 point"], key="sw_mic")
 
     st.markdown("---")
-    st.header("② CSVファイル設定")
-    st.caption("ファイル名の末尾を `グループ名_レベル名.csv` の形式にすると自動認識します（例: ASA-10_1W.csv）")
-
-    sw_csv_files = st.file_uploader(
-        "スイープ測定CSVをアップロード（複数可）",
-        type=["csv"], accept_multiple_files=True, key="sw_csv"
-    )
+    st.header("③ 出力設定")
 
     sw_output_name = st.text_input("出力ファイル名", value="出力結果_Sweep.xlsx", key="sw_out")
     if not sw_output_name.endswith(".xlsx"):
         sw_output_name += ".xlsx"
-
-    if sw_csv_files:
-        st.write("**検出されたファイル:**")
-        rows = []
-        for f in sw_csv_files:
-            name = os.path.splitext(f.name)[0]
-            parts = name.rsplit("_", 1)
-            group = parts[0] if len(parts) == 2 else name
-            level = parts[1] if len(parts) == 2 else ""
-            rows.append({"ファイル名": f.name, "グループ（シート名）": group, "レベル": level})
-        st.table(rows)
 
     st.markdown("---")
 
