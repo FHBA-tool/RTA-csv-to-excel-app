@@ -314,16 +314,17 @@ def build_sweep_excel_bytes(groups, settings) -> bytes:
 # ═══════════════════════════════════════════════════════════════════════════
 
 with tab_pink:
-    st.header("① Excelファイル設定")
-
-    template_file = st.file_uploader(
-        "テンプレートExcelをアップロード",
-        type=["xlsx", "xlsm"],
-        key="template"
-    )
-    output_filename = st.text_input("出力ファイル名", value="出力ファイル.xlsx")
-    if not output_filename.endswith(".xlsx"):
-        output_filename += ".xlsx"
+    st.header("① CSVファイル設定")
+    st.subheader("フロアノイズCSV")
+    floor_csv_file = st.file_uploader("フロアノイズCSVをアップロード（1ファイルのみ）",
+                                       type=["csv"], key="floor_csv")
+    st.subheader("測定データCSV")
+    data_csv_files = st.file_uploader("測定データCSVをアップロード（複数可）",
+                                       type=["csv"], accept_multiple_files=True, key="data_csv")
+    if data_csv_files:
+        st.write("**選択されたファイル:**")
+        for i, f in enumerate(data_csv_files):
+            st.write(f"　{i+1}. {f.name}")
 
     st.markdown("---")
     st.header("② 測定条件")
@@ -356,17 +357,16 @@ with tab_pink:
         mic = st.selectbox("Mic", ["Binaural", "1 point"], key="pn_mic")
 
     st.markdown("---")
-    st.header("③ CSVファイル設定")
-    st.subheader("フロアノイズCSV")
-    floor_csv_file = st.file_uploader("フロアノイズCSVをアップロード（1ファイルのみ）",
-                                       type=["csv"], key="floor_csv")
-    st.subheader("測定データCSV")
-    data_csv_files = st.file_uploader("測定データCSVをアップロード（複数可）",
-                                       type=["csv"], accept_multiple_files=True, key="data_csv")
-    if data_csv_files:
-        st.write("**選択されたファイル:**")
-        for i, f in enumerate(data_csv_files):
-            st.write(f"　{i+1}. {f.name}")
+    st.header("③ 出力設定")
+
+    template_file = st.file_uploader(
+        "テンプレートExcelをアップロード",
+        type=["xlsx", "xlsm"],
+        key="template"
+    )
+    output_filename = st.text_input("出力ファイル名", value="出力ファイル.xlsx")
+    if not output_filename.endswith(".xlsx"):
+        output_filename += ".xlsx"
 
     st.markdown("---")
 
