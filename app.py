@@ -24,7 +24,7 @@ st.set_page_config(
 st.title("📊 RTA CSV → Excel 変換ツール")
 st.markdown("---")
 
-tab_pink, tab_sweep = st.tabs(["🎵 Pink Noise", "📈 Sin Sweep"])
+tab_pink, tab_sweep = st.tabs(["リアルタイム分析データ", "スイープ測定データ"])
 
 
 # ═══════════════════════════════════════════════════════════════════════════
